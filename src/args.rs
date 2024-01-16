@@ -1,21 +1,38 @@
+
 use clap::{Parser, Subcommand};
 use eyre::Result;
-
 
 #[derive(Clone, Debug, Parser)]
 pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
-
-    #[arg(long, short, default_value = "10")]
-    pub limit: u8,
 }
 
 #[derive(Clone, Debug, Subcommand)]
 pub enum Action {
-    Fetch,
-    Pulls { repo: crate::FullName },
-    SearchIssues { query: String },
+    Refresh,
+    Repos {
+        #[clap(long, default_value = "false")]
+        no_cache: bool,
+    },
+    Pulls {
+        repo: crate::FullName,
+    },
+
+    /// Search issues and pull requests
+    SearchIssues {
+        #[clap(subcommand)]
+        query: SearchQuery
+    },
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum SearchQuery {
+    Reviews,
+    Pulls,
+    Custom {
+        query: String,
+    }
 }
 
 impl Args {

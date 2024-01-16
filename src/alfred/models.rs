@@ -2,10 +2,10 @@ use itertools::Itertools;
 use octocrab::models::Author;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use typed_builder::TypedBuilder;
 
-use super::ALFRED_WORKFLOW_DATA;
+use super::ALFRED_WORKFLOW_CACHE;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Items {
@@ -32,7 +32,6 @@ pub struct Item {
     title: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[builder(setter(strip_option))]
     subtitle: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -66,17 +65,15 @@ pub struct Icon {
     path: PathBuf,
 }
 
-// impl FromStr for Icon {
-//     type Err = eyre::Error;
+impl FromStr for AuthorIcon {
+    type Err = eyre::Error;
 
-//     fn from_str(name: &str) -> Result<Self, Self::Err> {
-//         Ok(Self {
-//             path: ALFRED_WORKFLOW_DATA.join(format!("{}.png", name)),
-//         })
-//     }
-// }
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        Ok(Self(name.to_string()))
+    }
+}
 
-pub struct AuthorIcon(pub String);
+pub struct AuthorIcon(String);
 
 impl From<&Author> for AuthorIcon {
     fn from(author: &Author) -> Self {
@@ -110,12 +107,15 @@ impl From<&Option<Box<Author>>> for AuthorIcon {
 
 impl From<AuthorIcon> for Icon {
     fn from(author: AuthorIcon) -> Self {
+        let alfred_workflow_cache = ALFRED_WORKFLOW_CACHE
+            .as_ref()
+            .expect("should have alfred_workflow_cache");
         match author.0.as_str() {
             "" => Self {
-                path: ALFRED_WORKFLOW_DATA.join("octocat.png"),
+                path: alfred_workflow_cache.join("octocat.png"),
             },
             user => Self {
-                path: ALFRED_WORKFLOW_DATA.join(format!("{}.png", user)),
+                path: alfred_workflow_cache.join(format!("{}.png", user)),
             },
         }
     }
@@ -141,7 +141,7 @@ pub struct Modifiers {
 }
 
 #[derive(Debug, Serialize, Deserialize, TypedBuilder)]
-#[builder(field_defaults(default, setter(strip_option)))]
+#[builder(field_defaults(default, setter(strip_option, into)))]
 pub struct Modifier {
     #[serde(skip_serializing_if = "Option::is_none")]
     arg: Option<String>,
@@ -156,6 +156,70 @@ pub struct Modifier {
 impl Item {
     pub fn owner(&self) -> Option<String> {
         // self.variables.get("owner").cloned()
-        Some(self.variables.as_ref()?.as_object()?.get("owner")?.to_string())
+        Some(
+            self.variables
+                .as_ref()?
+                .as_object()?
+                .get("owner")?
+                .as_str()?
+                .to_string(),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_owner() {
+        let item = Item {
+            title: "foo".into(),
+            subtitle: None,
+            uid: None,
+            arg: "foo".into(),
+            html_url: None,
+            matches: None,
+            icon: None,
+            variables: Some(json!({
+                "owner": "foo",
+                "name": "bar",
+            })),
+            mods: None,
+        };
+
+        assert_eq!(item.owner(), Some("foo".into()));
+    }
+
+    #[test]
+    fn test_modifiers() {
+        let item = Item {
+            title: "foo".into(),
+            subtitle: None,
+            uid: None,
+            arg: "foo".into(),
+            html_url: None,
+            matches: None,
+            icon: None,
+            variables: None,
+            mods: Some(Modifiers {
+                alt: Some(Modifier {
+                    arg: None,
+                    subtitle: Some("foo".into()),
+                    variables: None,
+                }),
+                cmd: None,
+                ctrl: None,
+                fun: None,
+                shift: None,
+            }),
+        };
+
+        assert_eq!(
+            serde_json::to_string(&item).unwrap(),
+            r#"{"title":"foo","arg":"foo","mods":{"alt":{"subtitle":"foo"}}}"#
+        );
     }
 }

@@ -1,5 +1,3 @@
-
-
 use eyre::Result;
 
 use serde_json::json;
@@ -9,15 +7,16 @@ use crate::{
         models::{Item, Items},
         AuthorIcon,
     },
-    FullName,
+    FullName, OCTOCRAB,
 };
 
-pub async fn run(repo: FullName, limit: u8) -> Result<()> {
-    let pulls = octocrab::instance()
+pub async fn run(repo: FullName) -> Result<()> {
+    let pulls = OCTOCRAB
+        .clone()
         .pulls(repo.owner, repo.name)
         .list()
         .page(1u8)
-        .per_page(limit)
+        .per_page(15u8)
         .send()
         .await?;
     let items = pulls

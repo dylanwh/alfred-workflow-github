@@ -1,4 +1,4 @@
 /target
-/data
-/old
+/private
+/build
 .env
