@@ -61,5 +61,7 @@ build/github.alfredworkflow: $(wildcard workflow/*)
 	mkdir -p build
 	cd workflow && zip -r ../$@ *
 
+workflow: build/github.alfredworkflow
+
 .PRECIOUS: target/x86_64-apple-darwin/%/$(BIN) target/aarch64-apple-darwin/%/$(BIN) target/universal-apple-darwin/%/$(BIN)
-.PHONY: release debug clean build-deps gen-csr gen-key import-key fat-binary
+.PHONY: release debug clean build-deps gen-csr gen-key import-key fat-binary workflow
