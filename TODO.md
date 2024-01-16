@@ -1,0 +1,4 @@
+- publish to crates.io
+- distribute a signed pkg installer
+- add caching to search-issues (with very small expiry, e.g. 5 minutes or so?)
+- provide for more configuration, including an alternative for getting the github personal token.

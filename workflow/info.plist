@@ -361,9 +361,11 @@
 			<key>config</key>
 			<dict>
 				<key>focusedappvariable</key>
-				<false/>
+				<true/>
 				<key>focusedappvariablename</key>
 				<string></string>
+				<key>keyword</key>
+				<string>gh</string>
 			</dict>
 			<key>type</key>
 			<string>alfred.workflow.trigger.snippet</string>
@@ -494,9 +496,11 @@
 			<key>config</key>
 			<dict>
 				<key>focusedappvariable</key>
-				<false/>
+				<true/>
 				<key>focusedappvariablename</key>
 				<string></string>
+				<key>keyword</key>
+				<string>pull</string>
 			</dict>
 			<key>type</key>
 			<string>alfred.workflow.trigger.snippet</string>
@@ -535,13 +539,13 @@
 				<key>escaping</key>
 				<integer>102</integer>
 				<key>script</key>
-				<string></string>
+				<string>$alfred_workflow_github copy</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
-				<string>copy.fish</string>
+				<string></string>
 				<key>type</key>
-				<integer>8</integer>
+				<integer>11</integer>
 			</dict>
 			<key>type</key>
 			<string>alfred.workflow.action.script</string>
@@ -631,6 +635,8 @@ end run</string>
 				<true/>
 				<key>focusedappvariablename</key>
 				<string>focusedapp</string>
+				<key>keyword</key>
+				<string>revs</string>
 			</dict>
 			<key>type</key>
 			<string>alfred.workflow.trigger.snippet</string>
@@ -740,7 +746,7 @@ end run</string>
 				<key>runningsubtext</key>
 				<string>searching {query}</string>
 				<key>script</key>
-				<string>$alfred_workflow_github pulls</string>
+				<string>$alfred_workflow_github search-issues pulls</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -1001,7 +1007,7 @@ action=pulls</string>
 	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
-	<string>v1.0.1</string>
+	<string>v1.0.2</string>
 	<key>webaddress</key>
 	<string>https://github.com/dylanwh/alfred-workflow-github</string>
 </dict>

@@ -1,6 +1,7 @@
 mod actions;
 mod alfred;
 mod args;
+mod config;
 mod hub_compat;
 mod github_util;
 
@@ -10,9 +11,9 @@ use std::{
     sync::Arc,
 };
 
-use alfred::{ALFRED_WORKFLOW_CACHE, ALFRED_WORKFLOW_DATA};
 use args::{Action, Args};
-use eyre::{Result, Context};
+use config::Config;
+use eyre::Result;
 use hub_compat::HubConfig;
 use octocrab::Octocrab;
 use once_cell::sync::Lazy;
@@ -35,14 +36,21 @@ static OCTOCRAB: Lazy<Arc<Octocrab>> = Lazy::new(|| {
 async fn main() -> Result<()> {
     let args = Args::new()?;
 
-    let _ = ALFRED_WORKFLOW_DATA.as_ref().wrap_err("missing $alfred_workflow_data")?;
-    let _ = ALFRED_WORKFLOW_CACHE.as_ref().wrap_err("missing $alfred_workflow_cache")?;
 
     match args.action {
+        Action::Install  => actions::install::run()?,
         Action::Refresh => actions::refresh::run().await?,
+        Action::Config { method } => actions::config::run(method).await?,
         Action::Repos { no_cache } => actions::repos::run(no_cache).await?,
         Action::Pulls { repo } => actions::pulls::run(repo).await?,
-        Action::SearchIssues { query } => actions::search_issues::run(query).await?,
+        Action::SearchIssues { query } => {
+            let config = Config::load().await?;
+            actions::search_issues::run(&config.search_issues, query).await?
+        },
+        Action::Copy => {
+            let config = Config::load().await?;
+            actions::copy::run(&config.copy).await?
+        },
     }
 
     Ok(())

@@ -6,22 +6,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::{
-    alfred::{AuthorIcon, Item, Items, ALFRED_WORKFLOW_DATA},
+    alfred::{AuthorIcon, Item, Items},
     args::SearchQuery,
     OCTOCRAB, github_util,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-struct SearchIssuesConfig {
+pub struct SearchIssuesConfig {
     reviews: String,
     pulls: String,
-}
-
-// TODO: later this could function as app config for the workflow
-// I like to customize this per-machine, so it's stored in the workflow data dir
-#[derive(Debug, Serialize, Deserialize, Default)]
-struct Config {
-    search_issues: SearchIssuesConfig,
 }
 
 impl Default for SearchIssuesConfig {
@@ -33,21 +26,13 @@ impl Default for SearchIssuesConfig {
     }
 }
 
-pub async fn run(query: SearchQuery) -> Result<()> {
+pub async fn run(config: &SearchIssuesConfig, query: SearchQuery) -> Result<()> {
     let full_name_re = Regex::new(r"^https://github.com/(?<full_name>[^/]+/[^/]+)")?;
-    let config_file = ALFRED_WORKFLOW_DATA.as_ref()?.join("config.toml");
-    if !config_file.exists() {
-        let config = Config::default();
-        let config = toml::to_string_pretty(&config)?;
-        tokio::fs::write(&config_file, config).await?;
-    }
-    let config = tokio::fs::read_to_string(&config_file).await?;
-    let config: Config = toml::from_str(&config)?;
 
     let query = match query {
-        SearchQuery::Reviews => config.search_issues.reviews,
-        SearchQuery::Pulls => config.search_issues.pulls,
-        SearchQuery::Custom { query } => query,
+        SearchQuery::Reviews => &config.reviews,
+        SearchQuery::Pulls => &config.pulls,
+        SearchQuery::Custom { ref query } => query,
     };
 
     let items: Items = OCTOCRAB
