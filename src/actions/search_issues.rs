@@ -1,4 +1,3 @@
-
 use eyre::{ContextCompat, Result};
 use octocrab::models::issues::Issue;
 use regex::Regex;
@@ -8,7 +7,7 @@ use serde_json::json;
 use crate::{
     alfred::{AuthorIcon, Item, Items},
     args::SearchQuery,
-    OCTOCRAB, github_util,
+    github_util, OCTOCRAB,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,7 +20,7 @@ impl Default for SearchIssuesConfig {
     fn default() -> Self {
         Self {
             reviews: "is:open is:pr user-review-requested:@me archived:false".to_string(),
-            pulls: "is:open is:pr archived:false author:@me".to_string()
+            pulls: "is:open is:pr archived:false author:@me".to_string(),
         }
     }
 }

@@ -3,7 +3,6 @@ use tokio::fs;
 
 use crate::alfred::{Items, ALFRED_WORKFLOW_CACHE};
 
-
 pub async fn fetch_avatars(items: &Items) -> Result<()> {
     let http_client = reqwest::Client::new();
 

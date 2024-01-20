@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use eyre::{ContextCompat, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::actions::{search_issues::SearchIssuesConfig, copy::CopyConfig};
+use crate::actions::{copy::CopyConfig, search_issues::SearchIssuesConfig};
 
 // TODO: later this could function as app config for the workflow
 // I like to customize this per-machine, so it's stored in the workflow data dir

@@ -8,7 +8,7 @@ use tokio::fs;
 
 use crate::{
     alfred::{tokenize, AuthorIcon, Item, Items, Modifier, Modifiers, ALFRED_WORKFLOW_DATA},
-    OCTOCRAB, github_util,
+    github_util, OCTOCRAB,
 };
 
 pub async fn run(no_cache: bool) -> Result<()> {
@@ -89,7 +89,6 @@ fn repository_to_item(r: Repository) -> Result<Item> {
 
     Ok(item)
 }
-
 
 async fn user_repos() -> Result<Page<Repository>> {
     let repos = OCTOCRAB

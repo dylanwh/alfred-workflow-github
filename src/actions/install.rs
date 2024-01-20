@@ -1,4 +1,3 @@
-
 use eyre::Result;
 
 #[cfg(feature = "install")]
@@ -14,10 +13,6 @@ struct Workflow;
 
 #[cfg(feature = "install")]
 pub fn run() -> Result<()> {
-    // create a zip file of the workflow
-
-    use std::fs::remove_file;
-
     let mut zip = zip::ZipWriter::new(std::fs::File::create("github.alfredworkflow")?);
     for file in Workflow::iter() {
         let path = file.as_ref();
@@ -27,7 +22,6 @@ pub fn run() -> Result<()> {
     }
 
     open::that("github.alfredworkflow")?;
-    remove_file("github.alfredworkflow")?;
 
     Ok(())
 }

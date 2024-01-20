@@ -2,8 +2,8 @@ mod actions;
 mod alfred;
 mod args;
 mod config;
-mod hub_compat;
 mod github_util;
+mod hub_compat;
 
 use std::{
     fmt::{Display, Formatter},
@@ -36,9 +36,8 @@ static OCTOCRAB: Lazy<Arc<Octocrab>> = Lazy::new(|| {
 async fn main() -> Result<()> {
     let args = Args::new()?;
 
-
     match args.action {
-        Action::Install  => actions::install::run()?,
+        Action::Install => actions::install::run()?,
         Action::Refresh => actions::refresh::run().await?,
         Action::Config { method } => actions::config::run(method).await?,
         Action::Repos { no_cache } => actions::repos::run(no_cache).await?,
@@ -46,11 +45,11 @@ async fn main() -> Result<()> {
         Action::SearchIssues { query } => {
             let config = Config::load().await?;
             actions::search_issues::run(&config.search_issues, query).await?
-        },
+        }
         Action::Copy => {
             let config = Config::load().await?;
             actions::copy::run(&config.copy).await?
-        },
+        }
     }
 
     Ok(())

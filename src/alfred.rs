@@ -1,20 +1,18 @@
 pub mod models;
 
+use eyre::Result;
 use indexmap::IndexSet;
 pub use models::*;
 use once_cell::sync::Lazy;
 use std::{env, path::PathBuf, str::FromStr};
-use eyre::Result;
 
 use crate::FullName;
 
-pub static ALFRED_WORKFLOW_DATA: Lazy<Result<PathBuf, env::VarError>> = Lazy::new(|| {
-    env::var("alfred_workflow_data").map(PathBuf::from)
-});
+pub static ALFRED_WORKFLOW_DATA: Lazy<Result<PathBuf, env::VarError>> =
+    Lazy::new(|| env::var("alfred_workflow_data").map(PathBuf::from));
 
-pub static ALFRED_WORKFLOW_CACHE: Lazy<Result<PathBuf, env::VarError>> = Lazy::new(|| {
-    env::var("alfred_workflow_cache").map(PathBuf::from)
-});
+pub static ALFRED_WORKFLOW_CACHE: Lazy<Result<PathBuf, env::VarError>> =
+    Lazy::new(|| env::var("alfred_workflow_cache").map(PathBuf::from));
 
 static TOKEN_SEPARATORS: &[char] = &['-', '.', '_', '/'];
 
@@ -44,11 +42,7 @@ mod tests {
     fn test_tokenize() {
         assert_eq!(
             tokenize("foo/bar").unwrap(),
-            vec![
-                "foo/bar".to_string(),
-                "foo".to_string(),
-                "bar".to_string()
-            ]
+            vec!["foo/bar".to_string(), "foo".to_string(), "bar".to_string()]
         );
         assert_eq!(
             tokenize("foo/bar-baz").unwrap(),

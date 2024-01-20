@@ -1,4 +1,3 @@
-
 use clap::{Parser, Subcommand};
 use eyre::Result;
 
@@ -10,10 +9,8 @@ pub struct Args {
 
 #[derive(Clone, Debug, Subcommand)]
 pub enum Action {
-
     /// Install the workflow
     Install,
-
 
     /// Configure local settings
     Config {
@@ -31,14 +28,12 @@ pub enum Action {
     },
 
     /// List pull requests for a repo
-    Pulls {
-        repo: crate::FullName,
-    },
+    Pulls { repo: crate::FullName },
 
     /// Search issues and pull requests
     SearchIssues {
         #[clap(subcommand)]
-        query: SearchQuery
+        query: SearchQuery,
     },
 
     /// Copy repo info to the clipboard using mdcopy
@@ -49,9 +44,7 @@ pub enum Action {
 pub enum SearchQuery {
     Reviews,
     Pulls,
-    Custom {
-        query: String,
-    }
+    Custom { query: String },
 }
 
 #[derive(Clone, Debug, Subcommand)]
