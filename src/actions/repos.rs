@@ -1,8 +1,10 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr, sync::Arc};
 
+use chrono::{DateTime, Duration, Utc};
 use eyre::{ContextCompat, Result};
+use futures::Future;
 use itertools::Itertools;
-use octocrab::{models::Repository, Page};
+use octocrab::{models::Repository, Octocrab};
 use serde_json::json;
 use tokio::fs;
 
@@ -14,22 +16,30 @@ use crate::{
 pub async fn run(no_cache: bool) -> Result<()> {
     fs::create_dir_all(ALFRED_WORKFLOW_DATA.as_ref()?).await?;
 
-    let all_repos_path = ALFRED_WORKFLOW_DATA.as_ref()?.join("repos.json");
+    let both_cache = ALFRED_WORKFLOW_DATA.as_ref()?.join("both.json");
+    let repos_cache = ALFRED_WORKFLOW_DATA.as_ref()?.join("repos.json");
+    let stars_cache = ALFRED_WORKFLOW_DATA.as_ref()?.join("stars.json");
     if !no_cache
-        && all_repos_path.exists()
-        && all_repos_path.metadata()?.modified()?.elapsed()?.as_secs() < 86400
+        && both_cache.exists()
+        && both_cache.metadata()?.modified()?.elapsed()?.as_secs() < 86400
     {
-        let all_repos = fs::read_to_string(all_repos_path).await?;
+        let all_repos = fs::read_to_string(both_cache).await?;
         println!("{}", all_repos);
         return Ok(());
     }
 
     let octocrab = OCTOCRAB.clone();
-    let repos = octocrab.all_pages(user_repos().await?).await?;
-    let starred_repos = octocrab.all_pages(user_starred_repos().await?).await?;
+    // let repos = octocrab.all_pages(user_repos().await?).await?;
+    let repos = cache_repos_smart(repos_cache, |since| user_repos(octocrab.clone(), since)).await?;
+    // let starred_repos = octocrab.all_pages(user_starred_repos().await?).await?;
+    let stars = cache_repos(stars_cache, Duration::seconds(3600), || {
+        user_starred_repos(octocrab.clone())
+    })
+    .await?;
+
     let items: Items = repos
         .into_iter()
-        .chain(starred_repos.into_iter())
+        .chain(stars.into_iter())
         .unique_by(|r| r.full_name.clone())
         .sorted_by(|a, b| a.full_name.cmp(&b.full_name))
         .filter(|r| r.full_name.is_some() && r.archived == Some(false))
@@ -40,7 +50,7 @@ pub async fn run(no_cache: bool) -> Result<()> {
 
     let json = serde_json::to_string(&items)?;
     println!("{}", json);
-    fs::write(all_repos_path, json).await?;
+    fs::write(both_cache, json).await?;
 
     Ok(())
 }
@@ -90,24 +100,69 @@ fn repository_to_item(r: Repository) -> Result<Item> {
     Ok(item)
 }
 
-async fn user_repos() -> Result<Page<Repository>> {
-    let repos = OCTOCRAB
-        .clone()
+async fn user_repos(crab: Arc<Octocrab>, since: Option<Since>) -> Result<Vec<Repository>> {
+    let mut repos = crab
         .current()
         .list_repos_for_authenticated_user()
-        .per_page(100u8)
-        .send()
-        .await?;
-    Ok(repos)
+        .per_page(100u8);
+    if let Some(since) = since {
+        repos = repos.since(since);
+    }
+
+    Ok(crab.all_pages(repos.send().await?).await?)
 }
 
-async fn user_starred_repos() -> Result<Page<Repository>> {
-    let repos = OCTOCRAB
-        .clone()
+async fn user_starred_repos(crab: Arc<Octocrab>) -> Result<Vec<Repository>> {
+    let repos = crab
         .current()
         .list_repos_starred_by_authenticated_user()
         .per_page(100u8)
         .send()
         .await?;
+    Ok(crab.all_pages(repos).await?)
+}
+
+type Since = DateTime<Utc>;
+
+async fn cache_repos_smart<F, T>(file: PathBuf, fetch: F) -> Result<Vec<Repository>>
+where
+    F: FnOnce(Option<Since>) -> T,
+    T: Future<Output = Result<Vec<Repository>>>,
+{
+    let repos = if let Ok((since, repos)) = cached(file.clone()).await {
+        let new_repos = fetch(Some(since)).await?;
+        repos
+            .into_iter()
+            .chain(new_repos.into_iter())
+            .filter(|r| r.full_name.is_some() && r.archived == Some(false))
+            .collect::<Vec<_>>()
+    } else {
+        fetch(None).await?
+    };
+
     Ok(repos)
+}
+
+async fn cache_repos<F, T>(file: PathBuf, expires: Duration, fetch: F) -> Result<Vec<Repository>>
+where
+    F: FnOnce() -> T,
+    T: Future<Output = Result<Vec<Repository>>>,
+{
+    match cached(file.clone()).await {
+        Ok((since, repos)) if Utc::now() - since < expires => Ok(repos),
+        _ => {
+            let repos = fetch().await?;
+            fs::write(&file, serde_json::to_string(&repos)?).await?;
+
+            Ok(repos)
+        }
+    }
+}
+
+async fn cached(file: PathBuf) -> Result<(Since, Vec<Repository>)> {
+    let repos = fs::read_to_string(&file).await?;
+    let repos: Vec<Repository> = serde_json::from_str(&repos)?;
+    let since = tokio::fs::metadata(&file).await?.modified()?;
+
+    Ok((DateTime::from(since), repos))
 }
