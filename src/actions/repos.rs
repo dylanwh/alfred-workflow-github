@@ -133,7 +133,7 @@ where
     F: FnOnce(Option<Since>) -> T,
     T: Future<Output = Result<Vec<Repository>>>,
 {
-    let repos = if let Ok((since, repos)) = cached(file).await {
+    let repos = if let Ok((since, repos)) = cached(file.as_ref()).await {
         let new_repos = fetch(Some(since)).await?;
         let repos = repos
             .into_iter()
